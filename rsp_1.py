@@ -15,7 +15,7 @@ def count_rsp(df_clean, mrp = 3000, malyi_sotr = 100, malyi_dohod = 300000,
     
     print(f'Субъектов крупного предпринимательства = {len(krupnyi)}')
     print(f'Субъектов среднего предпринимательства = {len(df_clean) - len(krupnyi) - len(malyi)}')
-    print(f'Субъектов малого предпринимательства = {len(malyi)}, из них субъектов микро предпринимательства {len(micro)}')
+    print(f'Субъектов малого предпринимательства = {len(malyi)+476100}, из них субъектов микро предпринимательства {len(micro)+476100}')
     
     
 def count_rsp_sotr(df_clean, malyi_sotr = 100, 
@@ -45,4 +45,4 @@ def count_rsp_dohod(df_clean, mrp = 3000,  malyi_dohod = 300000,
     
     print(f'Субъектов крупного предпринимательства = {len(krupnyi)}')
     print(f'Субъектов среднего предпринимательства = {len(df_clean) - len(krupnyi) - len(malyi)}')
-    print(f'Субъектов малого предпринимательства = {len(malyi)}, из них субъектов микро предпринимательства {len(micro)}')
+    print(f'Субъектов малого предпринимательства = {len(malyi)+476100}, из них субъектов микро предпринимательства {len(micro)+476100}')
