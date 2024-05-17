@@ -26,8 +26,8 @@ def count_rsp(df, mrp = 3000, malyi_sotr = 100, malyi_dohod = 300000,
     malyi = malyi.loc[malyi['LICENSE'].isna()]
     micro = micro.loc[micro['LICENSE'].isna()]
     
-    krupnyi.to_csv('krupnyi.csv', index=False)
-    srednii.to_csv('srednii.csv', index=False)
+    krupnyi.to_excel('krupnyi.xlsx', index=False)
+    srednii.to_excel('srednii.xlsx', index=False)
     
     kr = len(krupnyi)
     kr_nekom = len(krupnyi.loc[krupnyi['Priznak']=='Некоммерческая организация'])
