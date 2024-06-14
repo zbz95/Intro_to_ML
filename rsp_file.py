@@ -1,154 +1,55 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-def count_rsp(df, mrp = 3000, malyi_sotr = 100, malyi_dohod = 300000, 
+def count_rsp(data, mrp = 3000, malyi_sotr = 100, malyi_dohod = 300000, 
               micro_sotr = 15, micro_dohod = 30000,
               krupnyi_sotr = 250, krupnyi_dohod = 3000000):
     
-    df['СГД'] = df['СГД'].astype(np.float64)
-    df['СГЧС'] = df['СГЧС'].astype(np.float64)
+    df = data.copy()
+    df_num = df.loc[~((df['Доходы'].isin(['Нет данных по доходам за 2022г', 'Нет данных по доходам', '-'])) | (df['Сотрудники'].isin(['Нет данных по сотрудникам', '-'])))].copy()
+    df_nonnum = df.loc[((df['Доходы'].isin(['Нет данных по доходам за 2022г', 'Нет данных по доходам', '-'])) | (df['Сотрудники'].isin(['Нет данных по сотрудникам', '-'])))].copy()
+    df_num['Доходы'] = df_num['Доходы'].astype(np.float64)
+    df_num['Сотрудники'] = df_num['Сотрудники'].astype(np.float64)
     
+    df_num['Категория'] = None
+    df_num.loc[(df_num['Сотрудники']>krupnyi_sotr) | (df_num['Доходы']>krupnyi_dohod*mrp), 'Категория'] = 'Крупное предпринимательство'
+    df_num.loc[(df_num['Сотрудники']<=malyi_sotr) & (df_num['Доходы']<=malyi_dohod*mrp), 'Категория'] = 'Малое предпринимательство'
+    df_num.loc[(((df_num['Сотрудники']<=micro_sotr) | (df_num['Доходы']<=micro_dohod*mrp)) & (df_num['Категория']== 'Малое предпринимательство')), 'Категория'] = 'Микро предпринимательство'
+    df_num['Категория'].fillna('Среднее предпринимательство', inplace=True)
+    
+    df_num.loc[(df_num['Лицензия']!='-') & (df_num['Категория'].isin(['Малое предпринимательство', 'Микро предпринимательство'])), 'Категория'] = 'Среднее предпринимательство'
+    
+    df = pd.concat([df_num, df_nonnum])
+    
+    df.loc[df['Категория']=='Крупное предпринимательство'].to_excel('krupnyi.xlsx', index=False)
+    df.loc[df['Категория']=='Среднее предпринимательство'].to_excel('srednii.xlsx', index=False)
+    df.loc[df['Категория']=='Нет данных'].to_excel('net_dannyh.xlsx', index=False)
+    df.loc[df['Категория']=='Нет данных за 2022г'].to_excel('net_dannyh_2022.xlsx', index=False)
 
-    krupnyi = df.loc[(df['СГЧС']>krupnyi_sotr) | (df['СГД']>krupnyi_dohod*mrp)]
-    
-    malyi = df.loc[(df['СГЧС']<=malyi_sotr) & (df['СГД']<=malyi_dohod*mrp)]
-    micro = malyi.loc[(malyi['СГЧС']<=micro_sotr) | (malyi['СГД']<=micro_dohod*mrp)]
-    
-    kr_ma_xin = list(krupnyi['XIN']) + list(malyi['XIN'])
-    
-    srednii = df.loc[~df['XIN'].isin(kr_ma_xin)]
-    
-    
-    krupnyi = pd.concat([krupnyi, srednii.loc[srednii['LICENSE'].notna()]])
-    srednii = srednii.loc[srednii['LICENSE'].isna()]
-    
-    srednii = pd.concat([srednii, malyi.loc[malyi['LICENSE'].notna()]])
-    malyi = malyi.loc[malyi['LICENSE'].isna()]
-    micro = micro.loc[micro['LICENSE'].isna()]
-    
-    krupnyi.to_excel('krupnyi.xlsx', index=False)
-    srednii.to_excel('srednii.xlsx', index=False)
-    
-    kr = len(krupnyi)
-    kr_nekom = len(krupnyi.loc[krupnyi['Priznak']=='Некоммерческая организация'])
-    
-    sr = len(srednii)
-    sr_nekom = len(srednii.loc[srednii['Priznak']=='Некоммерческая организация'])
-    
-    micro_xin = list(micro['XIN'])
-    malyi = malyi.loc[~malyi['XIN'].isin(micro_xin)]
-    
-    ma = len(malyi)
-    ma_nekom = len(malyi.loc[malyi['Priznak']=='Некоммерческая организация'])
-    
-    mi = len(micro)
-    mi_nekom = len(micro.loc[micro['Priznak']=='Некоммерческая организация'])
-    
-    
-    
-    print(f'Крупных: {kr}. Коммерческих крупных: {kr-kr_nekom}. Некоммерческих крупных: {kr_nekom}.')
-    print(f'Средних: {sr}. Коммерческих средних: {sr-sr_nekom}. Некоммерческих средних: {sr_nekom}.')
-    print(f'Малых: {ma}. Коммерческих малых: {ma-ma_nekom}. Некоммерческих малых: {ma_nekom}.')
-    print(f'Микро: {mi}. Коммерческих микро: {mi-mi_nekom}. Некоммерческих микро: {mi_nekom}.')
+    print(df['Категория'].value_counts())
 
+def count_rsp_sotr(data, malyi_sotr = 100, micro_sotr = 15, krupnyi_sotr = 250):
     
-def count_rsp_sotr(df,  malyi_sotr = 100, micro_sotr = 15, krupnyi_sotr = 250):
+    df = data.copy()
+    df_num = df.loc[~(df['Сотрудники'].isin(['Нет данных по сотрудникам', '-']))].copy()
+    df_nonnum = df.loc[df['Сотрудники'].isin(['Нет данных по сотрудникам', '-'])].copy()
+    df_num['Сотрудники'] = df_num['Сотрудники'].astype(np.float64)
     
-    df['СГД'] = df['СГД'].astype(np.float64)
-    df['СГЧС'] = df['СГЧС'].astype(np.float64)
+    df_num['Категория'] = None
+    df_num.loc[df_num['Сотрудники']>krupnyi_sotr, 'Категория'] = 'Крупное предпринимательство'
+    df_num.loc[df_num['Сотрудники']<=malyi_sotr, 'Категория'] = 'Малое предпринимательство'
+    df_num.loc[((df_num['Сотрудники']<=micro_sotr) & (df_num['Категория']== 'Малое предпринимательство')), 'Категория'] = 'Микро предпринимательство'
+    df_num['Категория'].fillna('Среднее предпринимательство', inplace=True)
     
+    df_num.loc[(df_num['Лицензия']!='-') & (df_num['Категория'].isin(['Малое предпринимательство', 'Микро предпринимательство'])), 'Категория'] = 'Среднее предпринимательство'
+    
+    df = pd.concat([df_num, df_nonnum])
+    
+    df.loc[df['Категория']=='Крупное предпринимательство'].to_excel('krupnyi.xlsx', index=False)
+    df.loc[df['Категория']=='Среднее предпринимательство'].to_excel('srednii.xlsx', index=False)
+    df.loc[df['Категория']=='Нет данных'].to_excel('net_dannyh.xlsx', index=False)
+    df.loc[df['Категория']=='Нет данных за 2022г'].to_excel('net_dannyh_2022.xlsx', index=False)
 
-    krupnyi = df.loc[(df['СГЧС']>krupnyi_sotr) ]
-    
-    malyi = df.loc[(df['СГЧС']<=malyi_sotr)]
-    micro = malyi.loc[(malyi['СГЧС']<=micro_sotr)]
-    
-    kr_ma_xin = list(krupnyi['XIN']) + list(malyi['XIN'])
-    
-    srednii = df.loc[~df['XIN'].isin(kr_ma_xin)]
-    
-    
-    krupnyi = pd.concat([krupnyi, srednii.loc[srednii['LICENSE'].notna()]])
-    srednii = srednii.loc[srednii['LICENSE'].isna()]
-    
-    srednii = pd.concat([srednii, malyi.loc[malyi['LICENSE'].notna()]])
-    malyi = malyi.loc[malyi['LICENSE'].isna()]
-    micro = micro.loc[micro['LICENSE'].isna()]
-    
-    krupnyi.to_csv('krupnyi.csv', index=False)
-    srednii.to_csv('srednii.csv', index=False)
-    
-    kr = len(krupnyi)
-    kr_nekom = len(krupnyi.loc[krupnyi['Priznak']=='Некоммерческая организация'])
-    
-    sr = len(srednii)
-    sr_nekom = len(srednii.loc[srednii['Priznak']=='Некоммерческая организация'])
-    
-    micro_xin = list(micro['XIN'])
-    malyi = malyi.loc[~malyi['XIN'].isin(micro_xin)]
-    
-    ma = len(malyi)
-    ma_nekom = len(malyi.loc[malyi['Priznak']=='Некоммерческая организация'])
-    
-    mi = len(micro)
-    mi_nekom = len(micro.loc[micro['Priznak']=='Некоммерческая организация'])
-    
-    
-    
-    print(f'Крупных: {kr}. Коммерческих крупных: {kr-kr_nekom}. Некоммерческих крупных: {kr_nekom}.')
-    print(f'Средних: {sr}. Коммерческих средних: {sr-sr_nekom}. Некоммерческих средних: {sr_nekom}.')
-    print(f'Малых: {ma}. Коммерческих малых: {ma-ma_nekom}. Некоммерческих малых: {ma_nekom}.')
-    print(f'Микро: {mi}. Коммерческих микро: {mi-mi_nekom}. Некоммерческих микро: {mi_nekom}.')
-    
-    
-def count_rsp_dohod(df, mrp = 3000,  malyi_dohod = 300000,  micro_dohod = 30000, krupnyi_dohod = 3000000):
-    
-    df['СГД'] = df['СГД'].astype(np.float64)
-    df['СГЧС'] = df['СГЧС'].astype(np.float64)
-    
-
-    krupnyi = df.loc[ (df['СГД']>krupnyi_dohod*mrp)]
-    
-    malyi = df.loc[ (df['СГД']<=malyi_dohod*mrp)]
-    micro = malyi.loc[ (malyi['СГД']<=micro_dohod*mrp)]
-    
-    kr_ma_xin = list(krupnyi['XIN']) + list(malyi['XIN'])
-    
-    srednii = df.loc[~df['XIN'].isin(kr_ma_xin)]
-    
-    
-    krupnyi = pd.concat([krupnyi, srednii.loc[srednii['LICENSE'].notna()]])
-    srednii = srednii.loc[srednii['LICENSE'].isna()]
-    
-    srednii = pd.concat([srednii, malyi.loc[malyi['LICENSE'].notna()]])
-    malyi = malyi.loc[malyi['LICENSE'].isna()]
-    micro = micro.loc[micro['LICENSE'].isna()]
-    
-    krupnyi.to_csv('krupnyi.csv', index=False)
-    srednii.to_csv('srednii.csv', index=False)
-    
-    kr = len(krupnyi)
-    kr_nekom = len(krupnyi.loc[krupnyi['Priznak']=='Некоммерческая организация'])
-    
-    sr = len(srednii)
-    sr_nekom = len(srednii.loc[srednii['Priznak']=='Некоммерческая организация'])
-    
-    micro_xin = list(micro['XIN'])
-    malyi = malyi.loc[~malyi['XIN'].isin(micro_xin)]
-    
-    ma = len(malyi)
-    ma_nekom = len(malyi.loc[malyi['Priznak']=='Некоммерческая организация'])
-    
-    mi = len(micro)
-    mi_nekom = len(micro.loc[micro['Priznak']=='Некоммерческая организация'])
-    
-    
-    
-    print(f'Крупных: {kr}. Коммерческих крупных: {kr-kr_nekom}. Некоммерческих крупных: {kr_nekom}.')
-    print(f'Средних: {sr}. Коммерческих средних: {sr-sr_nekom}. Некоммерческих средних: {sr_nekom}.')
-    print(f'Малых: {ma}. Коммерческих малых: {ma-ma_nekom}. Некоммерческих малых: {ma_nekom}.')
-    print(f'Микро: {mi}. Коммерческих микро: {mi-mi_nekom}. Некоммерческих микро: {mi_nekom}.')
-
-    
+    print(df['Категория'].value_counts())
 
     
